@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>canvas resize img</title>
+</head>
+<body>
+<div><input type="file" onchange="fileChange(this)"/></div>
+<img />
+    <canvas style="display: none;">
+
+    </canvas>
+<img id="out"/>
+</body>
+<script src="src/jquery.min.js"></script>
+<script>
+
+    var pageConfig = {
+        maxImgWidth : 500
+    }
+
+    function blobToDataURL(blob, callback) {
+        var a = new FileReader();
+        a.onload = function (e) { callback(e.target.result); }
+        a.readAsDataURL(blob);
+    }
+
+    function fileChange(e){
+
+        //通过createObjectURL生产图片本地预览路径
+        var file = e.files[0];
+
+        blobToDataURL(file, function (dataurl) {
+            var img = new Image();
+            (function(a){
+                a.onload = function(){
+                    var theCanvas = document.querySelector('canvas');
+                    var context = theCanvas.getContext('2d');
+
+                    var resizeDataUrl = a.src;
+                    if(a.width > pageConfig.maxImgWidth){
+                        theCanvas.width = pageConfig.maxImgWidth;
+                        theCanvas.height = a.height*(pageConfig.maxImgWidth/a.width);
+                        context.drawImage(a,0,0,a.width,a.height,0,0,pageConfig.maxImgWidth,a.height*(pageConfig.maxImgWidth/a.width));
+                        resizeDataUrl = theCanvas.toDataURL();
+                    }
+
+                    //网络请求，这里才用到了jquery的$.ajax
+                    $.post('saveImg.php',{data:resizeDataUrl},function(data){
+                        if(data.status){
+                            document.querySelector('#out').setAttribute('src',data.data);
+                        }
+                    },'json');
+                };
+            })(img);
+            img.src = dataurl;
+        });
+
+
+
+    }
+</script>
+</html>
